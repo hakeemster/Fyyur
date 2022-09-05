@@ -87,7 +87,7 @@ Highlight folders:
 * Models in `app.py` -- (Missing functionality.) Defines the data models that set up the database tables.
 * `config.py` -- (Missing functionality.) Stores configuration variables and instructions, separate from the main application code. This is where you will need to connect to the database.
 
-
+ 
 Instructions
 -----
 
@@ -107,7 +107,7 @@ The starter codes use an interactive form builder library called [Flask-WTF](htt
 
 Acceptance Criteria
 -----
-
+ 
 1. The web app should be successfully connected to a PostgreSQL database. A local connection to a database on your local computer is fine.
 2. There should be no use of mock data throughout the app. The data structure of the mock data per controller should be kept unmodified when satisfied by real data.
 3. The application should behave just as before with mock data, but now uses real data from a real backend server, with real search functionality. For example:
