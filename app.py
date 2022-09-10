@@ -2,12 +2,12 @@
 # Imports
 #----------------------------------------------------------------------------#
 
-import json
+# import json
 from datetime import date, datetime
 import dateutil.parser
 import babel
 from flask import Flask, render_template, request, Response, flash, redirect, url_for, abort, jsonify
-from flask_moment import Moment
+# from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import logging
@@ -15,75 +15,9 @@ from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
 import sys
-#----------------------------------------------------------------------------#
-# App Config.
-#----------------------------------------------------------------------------#
 
-app = Flask(__name__) 
-moment = Moment(app)
-app.config.from_object('config')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
+from models import app, db, moment, Show, Artist, Venue
 
-migrate = Migrate(app, db)
-
-# TODO: connect to a postgresql database - Done!
-
-#----------------------------------------------------------------------------#
-# Models.
-#----------------------------------------------------------------------------#
-
-class Venue(db.Model):
-    __tablename__ = 'venue'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, nullable=False)
-    city = db.Column(db.String(120), nullable=False)
-    state = db.Column(db.String(120), nullable=False)
-    address = db.Column(db.String(120), nullable=False)
-    phone = db.Column(db.String(120), nullable=True)
-    genres = db.Column(db.String(120), nullable=False)
-    image_link = db.Column(db.String(500), nullable=True)
-    facebook_link = db.Column(db.String(120), nullable=True)
-    website_link = db.Column(db.String(120), nullable=True)
-    seeking_talent = db.Column(db.Boolean, default=False, nullable=False)
-    seeking_description = db.Column(db.String(), nullable=False)
-    shows = db.relationship('Show', backref='venue', lazy=True)
-
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
-    # Done
-
-class Artist(db.Model):
-    __tablename__ = 'artist'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, nullable=False)
-    city = db.Column(db.String(120), nullable=False)
-    state = db.Column(db.String(120), nullable=False)
-    phone = db.Column(db.String(120), nullable=True)
-    genres = db.Column(db.String(120), nullable=False)
-    image_link = db.Column(db.String(500), nullable=True)
-    facebook_link = db.Column(db.String(120), nullable=True)
-    website_link = db.Column(db.String(120), nullable=True)
-    seeking_venue = db.Column(db.Boolean, default=False, nullable=False)
-    seeking_description = db.Column(db.String(), nullable=False)
-    shows = db.relationship('Show', backref='artist', lazy=True)
-
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate 
-    # Done!
-
-class Show(db.Model):
-    __tablename__ = 'show'
-
-    id = db.Column(db.Integer, primary_key=True)
-    start_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    artist_id = db.Column(db.Integer, db.ForeignKey('artist.id'), nullable=False)
-    venue_id = db.Column(db.Integer, db.ForeignKey('venue.id'), nullable=False)
-
-    # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration
-    # Done!
-
-db.create_all() 
 
 #----------------------------------------------------------------------------#
 # Filters
@@ -150,13 +84,12 @@ def venues():
       }
       venues = Venue.query.filter_by(city=result.city, state=result.state).all()
 
-      # each venue
+      # present each venue
       formatted_venues = []
       for venue in venues:
           formatted_venues.append({
               "id": venue.id,
-              "name": venue.name,
-              # "num_upcoming_shows": 
+              "name": venue.name
           })
       
       city_state_unit["venues"] = formatted_venues
@@ -291,24 +224,43 @@ def show_venue(venue_id):
 
   # MY SOLUTION
   # --------------------
-
+  
   venue = Venue.query.get(venue_id)
-  setattr(venue, 'genres', venue.genres.split(',')) # convert genre string back to array
 
-  # get past shows
-  # past_shows = list(Show.query.filter(Show.start_time < datetime.now()))
-  # for show in past_shows:
-  #   temp = {}
-  #   temp['artist_name'] = show.artists.name
-  #   temp['artist_i'"] = show.artists.id
-  #   temp['artist_image_link'] = show.artists.image_link
-  #   temp['start_time'] = show.start_time.strftime("%m/%d/%Y, %H:%M:%S")
-  #   past_shows.append(temp)
+  shows_query = db.session.query(Show, Artist, Venue).join(Artist).join(Venue).filter(Show.artist_id==Artist.id).filter(Show.venue_id==Venue.id).filter(Venue.id==venue_id).all()
 
-  # setattr(venue, 'past_shows', past_shows)
-  # setattr(venue, 'past_shows_count', len(past_shows))
+  past_shows = []
+  upcoming_shows = []
 
-  return render_template('pages/show_venue.html', venue=venue)
+  for show in shows_query:
+    past_shows.append({
+      "artist_id" : show.Artist.id,
+      "artist_name":show.Artist.name, 
+      "artist_image_link": Artist.image_link,   
+      "start_time":show.Show.start_time
+    })
+
+  setattr(venue, 'genres', venue.genres.split(',')) # to convert the genre string back to an array
+
+  data={
+    "id": venue_id,
+    "name": venue.name,
+    "genres": venue.genres,
+    "address": venue.address,
+    "city": venue.city,
+    "state": venue.state,
+    "phone": venue.phone,
+    "website": venue.website_link,
+    "facebook_link": venue.facebook_link,
+    "seeking_talent": venue.seeking_talent,
+    "image_link": venue.image_link,
+    "past_shows":past_shows,
+    "upcoming_shows": upcoming_shows,
+    "past_shows_count": len(past_shows),
+    "upcoming_shows_count": len(upcoming_shows)
+  }
+
+  return render_template('pages/show_venue.html', venue=data)
 
   # --------------------
   # END OF MY SOLUTION
